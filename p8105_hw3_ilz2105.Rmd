@@ -1,0 +1,124 @@
+---
+title: "hw 3"
+author: "Lulu Zhang"
+date: "10/8/2019"
+output: github_document
+---
+
+
+--
+__Problem 1__
+--
+
+
+```{r}
+library(tidyr)
+library(tidyverse)
+# load the data
+library(p8105.datasets)
+data("instacart") 
+
+```
+
+```{r}
+#How many aisles are there, and which aisles are the most items ordered from?
+instacart
+instacart %>% 
+  count(aisle) %>% 
+  arrange(desc(n))
+  
+# there are 134 aisles
+# fresh vegetables and fresh fruits are two of the most ordered from aisles
+
+```
+
+  
+Make a plot that shows the number of items ordered in each aisle, limiting this to aisles 
+with more than 10000 items ordered. Arrange aisles sensibly, and organize your plot so others can read it.
+```{r}
+instacart %>%
+   count(aisle) %>% 
+  arrange(desc(n)) %>% 
+  filter(aisle, n < 10000) %>% 
+           ggplot(aes(x = aisle, y = n)) +
+           geom_point()
+
+
+  
+```
+
+Make a table showing the three most popular items in each of the aisles “baking ingredients”, 
+“dog food care”, and “packaged vegetables fruits”. Include the number of times each item is ordered in your table.
+```{r}
+#make a plot 
+
+instacart %>% 
+  order(product_name, descending = FALSE)
+```
+
+  
+#Make a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream 
+#are ordered on each day of the week; format this table for human readers (i.e. produce a 2 x 7 table).
+
+```{r}
+#make a table
+
+table = instacart %>% 
+  janitor::clean_names() #%>% 
+  sort(product_name, by == "Pink Lady Apples") %>% 
+  mean(order_hour_of_day)
+  pivot_longer(product_name)
+  table
+```
+
+--
+__Problem 2__
+--
+
+First, do some data cleaning:
+
+format the data to use appropriate variable names;
+focus on the “Overall Health” topic
+include only responses from “Excellent” to “Poor”
+organize responses as a factor taking levels ordered from “Poor” to “Excellent”
+Using this dataset, do or answer the following (commenting on the results of each):
+
+In 2002, which states were observed at 7 or more locations? What about in 2010?
+Construct a dataset that is limited to Excellent responses, and contains, year, state, and a variable that averages the data_value across locations within a state. Make a “spaghetti” plot of this average value over time within a state (that is, make a plot showing a line for each state across years – the geom_line geometry and group aesthetic will help).
+Make a two-panel plot showing, for the years 2006, and 2010, distribution of data_value for responses (“Poor” to “Excellent”) among locations in NY State.
+
+
+```{r}
+library(p8105.datasets)
+data("brfss")
+
+library(tidyverse)
+library(httr)
+library(jsonlite)
+
+var_names = GET("https://chronicdata.cdc.gov/views/acme-vg9e.json") %>%
+  content("text") %>%
+  fromJSON() %>% 
+  .[["columns"]] %>% 
+  .[["name"]] %>% 
+  .[-23]
+
+brfss_smart2010 = 
+  GET("https://chronicdata.cdc.gov/views/acme-vg9e/rows.json") %>% 
+  content("text") %>%
+  fromJSON() %>% 
+  .[["data"]]
+
+row_as_tibble = function(row_as_list, var_names) {
+  var_list = row_as_list[9:30]
+  names(var_list) = var_names 
+  var_list[sapply(var_list, is.null)] <- NULL
+  as_tibble(var_list, validate = FALSE)
+}
+
+brfss_smart2010 = 
+  brfss_smart2010 %>% 
+  map(.x = ., ~row_as_tibble(.x, var_names)) %>% 
+  bind_rows
+```
+
