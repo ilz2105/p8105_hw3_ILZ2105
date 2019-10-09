@@ -14,6 +14,8 @@ __Problem 1__
 ```{r}
 library(tidyr)
 library(tidyverse)
+library(dplyr)
+library(ggplot2)
 # load the data
 library(p8105.datasets)
 data("instacart") 
@@ -39,11 +41,11 @@ with more than 10000 items ordered. Arrange aisles sensibly, and organize your p
 instacart %>%
    count(aisle) %>% 
   arrange(desc(n)) %>% 
-  filter(aisle, n < 10000) %>% 
+  filter(n > 10000) %>% 
            ggplot(aes(x = aisle, y = n)) +
-           geom_point()
-
-
+           geom_point() 
+ # theme(axis.text.x =  element_text((angle = 90, hjust = 1)))
+  # facet_grid(rows = n , cols = aisle)
   
 ```
 
@@ -51,8 +53,8 @@ Make a table showing the three most popular items in each of the aisles “bakin
 “dog food care”, and “packaged vegetables fruits”. Include the number of times each item is ordered in your table.
 ```{r}
 #make a plot 
-
 instacart %>% 
+  count(aisle)
   order(product_name, descending = FALSE)
 ```
 
