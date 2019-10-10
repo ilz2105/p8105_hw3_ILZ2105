@@ -16,6 +16,8 @@ library(tidyr)
 library(tidyverse)
 library(dplyr)
 library(ggplot2)
+library(httr)
+library(jsonlite)
 # load the data
 library(p8105.datasets)
 data("instacart") 
@@ -38,14 +40,13 @@ instacart %>%
 Make a plot that shows the number of items ordered in each aisle, limiting this to aisles 
 with more than 10000 items ordered. Arrange aisles sensibly, and organize your plot so others can read it.
 ```{r}
-instacart %>%
+plot1 = instacart %>%
    count(aisle) %>% 
   arrange(desc(n)) %>% 
   filter(n > 10000) %>% 
            ggplot(aes(x = aisle, y = n)) +
-           geom_point() 
- # theme(axis.text.x =  element_text((angle = 90, hjust = 1)))
-  # facet_grid(rows = n , cols = aisle)
+           geom_point(aes(col)) #%>% +
+ plot1 + theme(axis.text.x = element_text(angle = 90,  hjust = 1)) 
   
 ```
 
@@ -69,7 +70,9 @@ table = instacart %>%
   janitor::clean_names() #%>% 
   sort(product_name, by == "Pink Lady Apples") %>% 
   mean(order_hour_of_day)
-  pivot_longer(product_name)
+  pivot_longer(product_name,
+               names_to = "product_name",
+               values_to = "order_hour_of_day")
   table
 ```
 
@@ -92,35 +95,17 @@ Make a two-panel plot showing, for the years 2006, and 2010, distribution of dat
 
 ```{r}
 library(p8105.datasets)
-data("brfss")
+data("brfss_smart2010")
 
-library(tidyverse)
-library(httr)
-library(jsonlite)
+brfss_smart2010 %>% 
+  janitor::clean_names() %>% 
+  filter(topic == "Overall Health") %>% 
+  drop_na(response) %>% 
+  mutate(
+    response = as.factor(response)
+  ) %>% 
+  select(-data_value_footnote, - location_id, -data_value_footnote_symbol)
 
-var_names = GET("https://chronicdata.cdc.gov/views/acme-vg9e.json") %>%
-  content("text") %>%
-  fromJSON() %>% 
-  .[["columns"]] %>% 
-  .[["name"]] %>% 
-  .[-23]
 
-brfss_smart2010 = 
-  GET("https://chronicdata.cdc.gov/views/acme-vg9e/rows.json") %>% 
-  content("text") %>%
-  fromJSON() %>% 
-  .[["data"]]
-
-row_as_tibble = function(row_as_list, var_names) {
-  var_list = row_as_list[9:30]
-  names(var_list) = var_names 
-  var_list[sapply(var_list, is.null)] <- NULL
-  as_tibble(var_list, validate = FALSE)
-}
-
-brfss_smart2010 = 
-  brfss_smart2010 %>% 
-  map(.x = ., ~row_as_tibble(.x, var_names)) %>% 
-  bind_rows
 ```
 
