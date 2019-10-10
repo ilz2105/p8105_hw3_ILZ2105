@@ -55,7 +55,7 @@ Make a table showing the three most popular items in each of the aisles “bakin
 #make a plot 
 instacart %>% 
   count(aisle)
-  order(product_name, descending = FALSE)
+ # order(product_name, descending = FALSE)
 ```
 
   
