@@ -76,28 +76,28 @@ instacart %>%
 
 ```{r}
 #make a table
-
- instacart %>% 
+instacart %>% 
   select(product_name, order_hour_of_day, order_dow) %>% 
 filter(
   product_name %in% c("Pink Lady Apples", "Coffee Ice Cream")) %>% 
-    group_by(product_name) %>% 
-  summarize(mean_hour == mean(order_hour_of_day) %>% 
+    group_by(product_name, order_dow) %>% 
+  summarize(mean_hour = mean(order_hour_of_day) %>% 
     mutate(
       day = recode(order_dow, 
-             '0' = "Sunday",
-             '1' = "Monday",
-             '2' = "Tuesday",
-             '3' = "Wednesday",
-             '4' = "Thursday",
-             '5' = "Friday",
-             '6' = "Saturday",
-             ) %>% 
+             `0` = "Sunday",
+             `1` = "Monday",
+             `2` = "Tuesday",
+             `3` = "Wednesday",
+             `4` = "Thursday",
+             `5` = "Friday",
+             `6` = "Saturday"
+             )) %>% 
   select(product_name, mean_hour, day) %>% 
-  pivot_longer(
-    names_to = "day",
-    values_to = "mean_hour"
-  ) #%>% 
+  pivot_wider(
+    names_from = "day",
+    values_from = "mean_hour") %>% 
+  knitr::kable(format = 'pandoc', caption = "mean hour")
+  
 ```
   
   pulse_data = 
