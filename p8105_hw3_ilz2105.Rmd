@@ -47,9 +47,8 @@ plot1 = instacart %>%
    count(aisle) %>% 
   arrange(desc(n)) %>% 
   filter(n > 10000) %>% 
-           ggplot(aes(x = aisle, y = n)) +
-           geom_point(aes(color = n)) +
- 
+           ggplot(aes(x = reorder(aisle, -n), y = n)) +
+           geom_point(aes(color = n)) 
  plot1 + theme(axis.text.x = element_text(angle = 90,  hjust = 1)) 
   
 ```
@@ -81,7 +80,7 @@ instacart %>%
 filter(
   product_name %in% c("Pink Lady Apples", "Coffee Ice Cream")) %>% 
     group_by(product_name, order_dow) %>% 
-  summarize(mean_hour = mean(order_hour_of_day) %>% 
+  summarize(mean_hour = mean(order_hour_of_day)) %>% 
     mutate(
       day = recode(order_dow, 
              `0` = "Sunday",
@@ -166,7 +165,7 @@ excellent = brfss %>%
   summarize(
   average = mean(data_value)) %>% 
   ggplot(aes(x = year, y = average, group = state)) +
-  geom_line()
+  geom_line(aes(color = state))
 
 excellent
 
@@ -177,7 +176,11 @@ for responses (“Poor” to “Excellent”) among locations in NY State.
 ```{r}
 year_2006 = brfss %>% 
 filter(year == "2006") %>% 
-ggplot(x = data_value, y = county, group = )
+  filter(state == "NY") %>% 
+ggplot(aes(x = data_value, y = county, group = response)) +
+  geom_boxplot(aes(color = response))
+
+year_2006
 ```
 
 --
