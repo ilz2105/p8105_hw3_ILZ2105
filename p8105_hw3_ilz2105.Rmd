@@ -240,7 +240,10 @@ pivot_longer(
   knitr::kable(format = 'pandoc', main = "total activity counts per day") 
  
 ```
-Activity appears to be higher on Mondays and most weekends compared to Tuesday-Friday. 
+Activity appears to be higher on some Mondays and most weekends compared to Tuesday-Friday. There does not appear to be any distinct
+trends in the data just from looking at the values for `day_activity` and comparing them to the `day`. The
+weekdays seem pretty consistent in value for the most part, staying between 300,000 to 500,000 with some days going 
+lower or higher. It is difficult to tell without looking at a plot. 
 
 
 Below, I made a single-panel plot that shows the 24-hour activity time courses for each day 
@@ -262,8 +265,6 @@ activity_plot = tidy_accel %>%
   labs(title = "Activity over 24 hours ")
 
 activity_plot 
-
-
 ```
  Describe in words any patterns or conclusions you can make based on this graph
  
