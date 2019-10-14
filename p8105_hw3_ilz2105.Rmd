@@ -24,7 +24,6 @@ library(readr)
 library(p8105.datasets)
 data("instacart") 
 instacart 
-
 ```
 
 There are `r ncol(instacart)` columns and `rnrow(instacart)` rows in the `instacart` dataset. Som key variables are 
@@ -39,10 +38,12 @@ We can see that `Bulgarian Yogurt` is located in aisle 120 in the `dairy eggs` d
   count(aisle) %>% 
   arrange(desc(n))
 ```
+
 There are `r nrow(row)` aisles; `fresh vegetables` and `fresh fruits` are two of the most ordered from aisles. 
   
 Below I made a plot that shows the number of items ordered in each aisle, limiting this to aisles 
 with more than 10000 items ordered.
+
 ```{r, message = FALSE}
 plot1 = instacart %>%
    count(aisle) %>% 
@@ -53,11 +54,11 @@ plot1 = instacart %>%
   theme(axis.text.x = element_text(angle = 90,  hjust = 1)) +
    labs(title = "number of items ordered in each aisle")
 plot1
-
 ```
 
 Next I made a table showing the three most popular items in each of the aisles “baking ingredients”, 
 “dog food care”, and “packaged vegetables fruits”. I included the number of times each item was ordered. 
+
 ```{r}
 #make a plot 
 instacart %>% 
@@ -151,8 +152,8 @@ distinctlocation_2010 = brfss %>%
   filter(n >= 7) %>% 
   rename(locations = n)
 distinctlocation_2010
-
 ```
+
 In 2002, CT, FL, MA, NC, NJ, PA were observed at 7+ locations. 
 In 2010 CA, CO, FL, MA, MD, NC, NE, NJ, NY, OH, PA, SC, TC, WA were observed at 7+ locations. 
 
@@ -177,6 +178,7 @@ excellent
 
 Then I made a two-panel plot showing, for the years 2006, and 2010, distribution of data_value 
 for responses (“Poor” to “Excellent”) among locations in NY State.
+
 ```{r}
 #make a two-panel plot
 year_2006_2010 = brfss %>% 
@@ -207,18 +209,40 @@ accel
 
 
 ```{r, message = FALSE}
-#c lean data
+#clean data
 tidy_accel = accel %>% 
   janitor::clean_names() %>% 
   mutate(
     new_day = if_else(day %in% c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday"), "weekday", day),
     new_day = if_else(day %in% c("Saturday", "Sunday"), "weekend", new_day)
   ) %>% 
-select(week, day_id, day, new_day, activity_1:activity_1440) 
+select(week, day_id, day, new_day, activity_1:activity_1440)
+  
   
 tidy_accel
 
 ```
+```{r}
+#tidy with pivot
+tidy_accel_2 = accel %>% 
+  janitor::clean_names() %>% 
+  pivot_longer(
+    activity_1:activity_1440,
+    names_to = "day_activity",
+    names_prefix = "activity",
+    values_to = "counts"
+  ) %>%
+  mutate(
+    new_day = if_else(day %in% c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday"), "weekday", day),
+    new_day = if_else(day %in% c("Saturday", "Sunday"), "weekend", new_day),
+    day_activity = as.integer(day_activity)
+  )  
+  
+  
+tidy_accel_2
+
+```
+
 Above, I created a new variable `new_day` that tells me whether the `day` is a `weekend` or `weekday`. I 
 kept all of the original columns, and did not choose to `pivot_longer` here because I wanted to be able 
 to read my table by `day_id`. There are `r nrow(tidy_accel)` rows and `r ncol(tidy_accel)` columns in 
@@ -228,18 +252,13 @@ Using my tidied dataset, I aggregated accross minutes to create a total activity
 
 ```{r,message = FALSE}
 # total activity sum for each day
-tidy_accel %>%
-pivot_longer(
-    activity_1:activity_1440,
-    names_to = "day_activity",
-    values_to = "counts"
-  ) %>% 
+tidy_accel_2 %>%
   group_by(day_id, day, new_day) %>% 
   summarize(day_activity = sum(counts)) %>% 
   select(day_id, new_day, day_activity) %>% 
-  knitr::kable(format = 'pandoc', main = "total activity counts per day") 
- 
+  knitr::kable(format = 'pandoc', main = "total activity counts per day")
 ```
+
 Activity appears to be higher on some Mondays and most weekends compared to Tuesday-Friday. There does not appear to be any distinct
 trends in the data just from looking at the values for `day_activity` and comparing them to the `day`. The
 weekdays seem pretty consistent in value for the most part, staying between 300,000 to 500,000 with some days going 
@@ -249,23 +268,47 @@ lower or higher. It is difficult to tell without looking at a plot.
 Below, I made a single-panel plot that shows the 24-hour activity time courses for each day 
 and used color to indicate day of the week.
 
-```{r, plot}
-#plot
+```{r}
+#plot attemp 1
 activity_plot = tidy_accel %>% 
-  pivot_longer(
+    pivot_longer(
     activity_1:activity_1440,
     names_to = "day_activity",
     values_to = "counts"
   ) %>%
- 
-   
   ggplot(aes(x = day_activity , y = counts, group = day_id, color = day))+
   geom_line()+
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))+
   labs(title = "Activity over 24 hours ")
 
+activity_plot
+```
+
+This plot is very dificult to see anything so below I tried* to break up the xaxis and separate by days. 
+
+```{r, plot}
+#plot  attempt 
+activity_plot = tidy_accel_2 %>% 
+  select(week, day, day_id, day_activity, counts) %>% 
+group_by(week, day, day_id) %>% 
+  ggplot(aes(x = day_activity, y = counts, group = week , color = day))+
+  geom_line()+
+  scale_x_continuous(
+    breaks = c(0, 60, 120, 180, 240, 300, 360, 420, 480, 540, 600, 660, 720, 780, 
+               840, 900, 960, 1120, 1180, 1240, 1300, 1360, 1420, 1440),
+    
+   labels = c("1" , "2" , "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13",
+              "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24"),
+    limits = c(0, 1440)
+  ) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))+
+  labs(title = "Activity over 24 hours ")
+
 activity_plot 
 ```
+
+
+
  Describe in words any patterns or conclusions you can make based on this graph
  
 
