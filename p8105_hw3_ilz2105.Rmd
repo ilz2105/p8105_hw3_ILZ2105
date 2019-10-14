@@ -68,8 +68,9 @@ instacart %>%
   filter(
     aisle %in% c("baking ingredients", "dog food care", "packaged vegetables fruits"),
     min_rank(desc(frequency)) <= 3 ) %>% 
-    arrange(frequency, aisle) %>% 
-      knitr::kable(format = 'pandoc', caption = "Popular Aisle Items")
+    arrange(frequency, aisle) %>%
+  rename("product name" = product_name) %>% 
+      knitr::kable(format = 'pandoc', main = "Popular Aisle Items")
 ```
 
   
@@ -98,6 +99,7 @@ filter(
   pivot_wider(
     names_from = "day",
     values_from = "mean_hour") %>% 
+  rename("product name" = product_name) %>% 
   knitr::kable(format = 'pandoc', main = "mean hour")
   
 ```
@@ -167,11 +169,17 @@ excellent = brfss %>%
   filter(response == "Excellent") %>% 
   group_by(year, state) %>%
   summarize(
-  average = mean(data_value)) %>% 
-  ggplot(aes(x = year, y = average, group = state)) +
-  geom_line(aes(color = state)) +
-  labs(title = "Excellent responses over state")
-
+  average = mean(data_value)) %>%
+  select(year, state, average) %>% 
+  distinct() %>% 
+  ggplot(aes(x = year, y = average)) +
+  geom_line(aes( group = state, color = state)) +
+  labs(title = "'Excellent' responses over state",
+       x = "year",
+       y = "average %")+
+  scale_y_continuous( breaks = c(10,20, 30),
+                      labels = c("10", "20", "30"),
+                      limits = c(10,30))
 excellent
 
 ```
@@ -180,25 +188,27 @@ Then I made a two-panel plot showing, for the years 2006, and 2010, distribution
 for responses (“Poor” to “Excellent”) among locations in NY State.
 
 ```{r}
-#make a two-panel plot
+#make a to panel plot
 year_2006_2010 = brfss %>% 
 filter(
   year %in% c( "2006","2010"), state == "NY") %>% 
-  #filter(state == "NY") %>% 
-ggplot(aes(x = response, y = data_value, group = response)) +
-  geom_boxplot(aes(color = response))+
+  select(year, state, county, response, data_value) %>% 
+ggplot(aes(x = response, y = data_value, fill = response)) +
+  geom_bar(stat = "identity") +
   facet_grid(~year)+
-  labs(title = "responses in NY from 2006 and 2010")
+  labs(title = "responses in NY from 2006 and 2010",
+       x = "response",
+       y = "data value")+
+  theme(axis.text.x = element_text(angle = 90,  hjust = 1))
 year_2006_2010
 ```
+
 
 
 --
 __Problem 3__
 --
 
-
-Load, tidy, and otherwise wrangle the data. Your final dataset should include all originally observed variables and values; have useful variable names; include a weekday vs weekend variable; and encode data with reasonable variable classes. Describe the resulting dataset (e.g. what variables exist, how many observations, etc).
 
 
 ```{r}
@@ -213,11 +223,10 @@ accel
 tidy_accel = accel %>% 
   janitor::clean_names() %>% 
   mutate(
-    new_day = if_else(day %in% c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday"), "weekday", day),
+    new_day = if_else(day %in% c("Monday", "Tuesday", "Wednesday",  "Thursday", "Friday"), "weekday", day),
     new_day = if_else(day %in% c("Saturday", "Sunday"), "weekend", new_day)
   ) %>% 
 select(week, day_id, day, new_day, activity_1:activity_1440)
-  
   
 tidy_accel
 
@@ -237,8 +246,6 @@ tidy_accel_2 = accel %>%
     new_day = if_else(day %in% c("Saturday", "Sunday"), "weekend", new_day),
     day_activity = as.integer(day_activity)
   )  
-  
-  
 tidy_accel_2
 
 ```
@@ -246,7 +253,8 @@ tidy_accel_2
 Above, I created a new variable `new_day` that tells me whether the `day` is a `weekend` or `weekday`. I 
 kept all of the original columns, and did not choose to `pivot_longer` here because I wanted to be able 
 to read my table by `day_id`. There are `r nrow(tidy_accel)` rows and `r ncol(tidy_accel)` columns in 
-`accel`. 
+`accel`. The data shows activity over 24 hours for 35 days or 5 weeks. It goes from `activity_1` to `activity_1440` 
+for every minute of the day, which I later condensed after `pivot_longer` into one column called `day_activity`. 
 
 Using my tidied dataset, I aggregated accross minutes to create a total activity variable for each day, and create a table showing these totals. Are any trends apparent?
 
@@ -289,8 +297,7 @@ This plot is very dificult to see anything so below I tried* to break up the xax
 ```{r, plot}
 #plot  attempt 
 activity_plot = tidy_accel_2 %>% 
-  select(week, day, day_id, day_activity, counts) %>% 
-group_by(week, day, day_id) %>% 
+group_by(week, day, day_id, day_activity, counts) %>% 
   ggplot(aes(x = day_activity, y = counts, group = week , color = day))+
   geom_line()+
   scale_x_continuous(
@@ -299,8 +306,7 @@ group_by(week, day, day_id) %>%
     
    labels = c("1" , "2" , "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13",
               "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24"),
-    limits = c(0, 1440)
-  ) +
+    limits = c(0, 1440)) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))+
   labs(title = "Activity over 24 hours ")
 
